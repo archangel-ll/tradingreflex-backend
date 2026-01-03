@@ -1,6 +1,6 @@
 print("🔥 LOADED app/main.py FROM RENDER 🔥")
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from datetime import datetime, timedelta
@@ -52,10 +52,16 @@ flow_events_history: List[FlowEvent] = []
 def get_flow_events():
     return list(reversed(flow_events_history))
 
-
 @app.get("/api/v1/flow", response_model=List[FlowEvent])
 def get_flow_events_alias():
     return list(reversed(flow_events_history))
+
+# -------------------------------------------------
+# Frontend-compatible alias endpoint (what Bolt is calling)
+# -------------------------------------------------
+@app.get("/api/flow/unusual", response_model=List[FlowEvent])
+def get_flow_unusual(minConviction: int = Query(60, alias="minConviction")):
+    return [e for e in reversed(flow_events_history) if e.conviction_score >= minConviction]
 
 # -------------------------------------------------
 # Flow generator (mock data for MVP)
@@ -82,20 +88,14 @@ async def generate_option_flow():
             is_sweep=random.choice([True, False]),
             is_block=random.choice([True, False]),
             conviction_score=random.randint(60, 95),
-            why_unusual=[
-                "High volume vs OI",
-                "Aggressive sweep"
-            ],
+            why_unusual=["High volume vs OI", "Aggressive sweep"],
         )
 
-        # Save event
         flow_events_history.append(event)
 
-        # Keep last 50 only
         if len(flow_events_history) > 50:
             flow_events_history.pop(0)
 
-        # Broadcast only meaningful events
         if event.conviction_score >= 60:
             event_dict = event.model_dump()
             event_dict["timestamp"] = event_dict["timestamp"].isoformat()
