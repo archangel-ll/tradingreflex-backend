@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class FlowEvent(BaseModel):
@@ -14,8 +14,9 @@ class FlowEvent(BaseModel):
     volume: int
     open_interest: int
     is_sweep: bool
+    is_block: bool = False
     conviction_score: int
-    why_unusual: list[str]
+    why_unusual: List[str] = Field(default_factory=list)
 
 
 class TechnicalsOut(BaseModel):
@@ -32,8 +33,7 @@ class TechnicalsOut(BaseModel):
 class NarrativeOut(BaseModel):
     ticker: str
     narrative_text: str
-    sentiment: str  # bullish / neutral / bearish
+    sentiment: str
     confidence_score: int
     generated_at: datetime
     valid_until: datetime
-
